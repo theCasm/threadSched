@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/mman.h>
 #include "thread.h"
 
 extern void yield(void);
@@ -23,6 +26,7 @@ void init()
 
 	for (int i = 0; i < NUM; i++) {
 		TTABLE[i].state = DEAD;
+		TTABLE[i].xarea = NULL;
 	}
 
 	first = &TTABLE[0];
@@ -63,4 +67,62 @@ void scheduleNext()
 	currID = currThread->ID;
 
 	return;
+}
+
+/*
+ * API call - actually make a thread.
+ * Will *not* run the thread. Just make one capable of running.
+ * Caller can yield to make their thread work.
+ *
+ * RETURNS: new thread ID.
+*/
+size_t createThread(void (*func)(void))
+{
+	void *stack;
+
+	size_t i = currID + 1;
+	while (TTABLE[i].state != DEAD && i != currID) {
+		i = (i+1) % NUM;
+	}
+
+	// check if we actually had a thread available
+	if (i == currID) {
+		// uh oh
+		fputs("Ran out of threads :(\n", stderr);
+		exit(1);
+	}
+
+	// TODO: not leak this memory
+	stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, 
+		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (stack == -1) {
+		fprintf(stderr, "Mmap failed: %s\n", strerror(errno));
+		exit(1);
+	}
+
+	TTABLE[i].ID = i;
+	TTABLE[i].state = READY;
+	if (TTABLE[i].xarea == NULL)
+		TTABLE[i].xarea = getXArea();
+	TTABLE[i].SP = stack + STACK_SIZE - 16 - 120;
+
+	
+	// rearrange stack so it has fake savestate, dies upon finishing
+	*(void**)(stack + STACK_SIZE - 8) = &die;
+	*(void**)(stack + STACK_SIZE - 16) = func;
+
+	return i;
+}
+
+void die()
+{
+	// because we don't do any interrupt shenanagins currID is the
+	// recently deceased thread
+
+	TTABLE[currID].state = DEAD;
+
+
+	// will never return because its dead, so we're good
+	// it will be recycled eventually
+	yield();
 }
