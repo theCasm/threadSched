@@ -1,7 +1,8 @@
 extern	TTABLE
-extern	curr
+extern	currID
+extern	scheduleNext
 
-%define THRDSZ	32
+%define TSIZ	32
 %define xarea  	16
 %define SP	  	24
 
@@ -54,30 +55,36 @@ extern	curr
 
 yield:	pushadq
 
-	imul 	rcx, [rel curr], THRDSZ	; rcx = sizeof(struct Thread)*curr
+	imul 	rcx, [rel currID], TSIZ	; rcx = sizeof(struct Thread)*currID
 
 	lea	rbx, [rel TTABLE]	;
-	add	rbx, rcx		; rbx = &TTABLE[curr]
+	add	rbx, rcx		; rbx = &TTABLE[currID]
 
-	mov	rax, 0xFFFFFFFFFFFFFFFF	;
-	mov	rdx, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with all features eabled
-	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[curr]->xarea
+	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with
+	mov	rdx, 0xFFFFFFFFFFFFFFFF	; all features enabled
+	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[currID]->xarea
 	XSAVE	[rcx]
-	mov	[rbx + SP], rsp	; &TTABLE[curr]->SP = rsp
 
-	; now context switch is ez - just change rsp
-	; in this version, just unswitch with nothing done
+	mov	[rbx + SP], rsp	; &TTABLE[currID]->SP = rsp
 
-awaken:	imul	rcx, [rel curr], THRDSZ
+	;; we just have to change currID to switch processes - but only
+	;; if the new process is waiting on a yield. We don't need 
+	;; to write everyting in asm anymore
+	call	scheduleNext
+
+	;; if all has gone well, scheduleNext has simply moved stuff around
+	;; so currID now gives the new thread.
+
+awaken:	imul	rcx, [rel currID], TSIZ
 
 	lea	rbx, [rel TTABLE]
 	add	rbx, rcx
 
 	mov	rsp, [rbx + SP]
 	
-	mov	rax, 0xFFFFFFFFFFFFFFFF	;
-	mov	rdx, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with all features eabled
-	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[curr]->xarea
+	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xrstor
+	mov	rdx, 0xFFFFFFFFFFFFFFFF	; with all features enabled
+	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[currID]->xarea
 	XRSTOR	[rcx]
 	
 	popadq

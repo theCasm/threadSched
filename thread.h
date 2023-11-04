@@ -5,8 +5,8 @@
 #ifndef SCHED_THREAD
 #define SCHED_THREAD
 
-extern void yield();
-extern void init();
+#define NUM 16
+#define XAREA_SIZE 2440
 
 enum state {
 	DEAD,
@@ -20,5 +20,10 @@ struct thread {
 	void *xarea;
 	void *SP;
 };
+
+extern struct thread TTABLE[];
+extern size_t currID;
+extern void yield(void);
+extern void init(void);
 
 #endif
