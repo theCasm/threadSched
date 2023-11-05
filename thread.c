@@ -27,10 +27,11 @@ void init()
 	for (int i = 0; i < NUM; i++) {
 		TTABLE[i].state = DEAD;
 		TTABLE[i].xarea = NULL;
+		TTABLE[i].stack = NULL;
+		TTABLE[i].ID = i;
 	}
 
 	first = &TTABLE[0];
-	first->ID = 0;
 	first->state = READY;
 	first->xarea = getXArea();
 	first->SP = NULL; // will be set only on yield
@@ -74,7 +75,7 @@ void scheduleNext()
  * Will *not* run the thread. Just make one capable of running.
  * Caller can yield to make their thread work.
  *
- * RETURNS: new thread ID.
+ * RETURNS: new thread ID or -1 if none available.
 */
 size_t createThread(void (*func)(void))
 {
@@ -88,29 +89,37 @@ size_t createThread(void (*func)(void))
 	// check if we actually had a thread available
 	if (i == currID) {
 		// uh oh
-		fputs("Ran out of threads :(\n", stderr);
-		exit(1);
+		return -1;
 	}
 
-	// TODO: not leak this memory
-	stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, 
-		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (stack == -1) {
-		fprintf(stderr, "Mmap failed: %s\n", strerror(errno));
-		exit(1);
+	stack = TTABLE[i].stack;
+	if (stack == NULL) {
+		stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE, 
+			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		if (stack == -1) {
+			fprintf(stderr, "Mmap failed: %s\n", strerror(errno));
+			exit(1);
+		}
+
+		TTABLE[i].stack = stack;
 	}
 
-	TTABLE[i].ID = i;
+
 	TTABLE[i].state = READY;
 	if (TTABLE[i].xarea == NULL)
 		TTABLE[i].xarea = getXArea();
-	TTABLE[i].SP = stack + STACK_SIZE - 16 - 120;
 
-	
-	// rearrange stack so it has fake savestate, dies upon finishing
+	// rearrange stack to create stack trace
 	*(void**)(stack + STACK_SIZE - 8) = &die;
 	*(void**)(stack + STACK_SIZE - 16) = func;
+	TTABLE[i].SP = stack + STACK_SIZE - 16;// - 120 - 8;
+	/*
+	 * 16 for stack frames, 120 for saved regs, 8 for eflags
+	*/
 
+	// call asm func to create initial savestate
+	threadInit(&TTABLE[i], TTABLE[i].SP);
+	
 	return i;
 }
 
@@ -120,9 +129,17 @@ void die()
 	// recently deceased thread
 
 	TTABLE[currID].state = DEAD;
-
-
+	
 	// will never return because its dead, so we're good
 	// it will be recycled eventually
 	yield();
+}
+
+void cleanup()
+{
+	for (int i = 0; i < NUM; ++i) {
+		if (TTABLE[i].stack != NULL)
+			munmap(TTABLE[i].stack, STACK_SIZE);
+	}
+	// TODO: stop leaking xarea mem
 }

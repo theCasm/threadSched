@@ -3,57 +3,96 @@
 */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/select.h>
 #include "thread.h"
 
-void myThread(void);
-void myThread2(void);
-void myThread3(void);
+char *readLine(char*, size_t);
+void somethingElse(void);
+void done(void);
+
+static long double pi;
 
 int main()
 {
 	init();
+	pi = 0.0;
 
-	int a = 7;
-	int b = 2;
-	char *test = malloc(100);
-	strcpy(test, "YEEEEEEEEEHAW");
+	size_t selse = createThread(&somethingElse);
 
-	printf("%d, %d, %s\n", a, b, test);
-
-	for (int i = 0; i < 10; ++i) {
-		size_t id = createThread(&myThread);
+	char buf[256] = "n";
+	fputs("can I help you? ", stdout);
+	fflush(stdout);
+	readLine(buf, 256);
+	if (buf[0] == 'y') {
+		done();
 	}
 
-	printf("%d, %d, %s\n", a, b, test);
+	fputs("are you sure? ", stdout);
+	fflush(stdout);
+	readLine(buf, 256);
+	if (buf[0] == 'n') {
+		done();
+	}
 
-	for (int i = 0; i < 100; ++i)
-		yield(); // let my babies run until they're prob all done
+	puts(":(");
 	
+	cleanup();
 	return 0;
 }
 
-void myThread()
+void somethingElse()
 {
-	puts("YOOOOOOOOO");
-	size_t jamie = createThread(&myThread2);
-	size_t alfred = createThread(&myThread3);
-	yield();
-	puts("getting sleepy...");
-	return;
+	// some generic compute-bound process
+	int i;
+	float term;
+
+	i = 0;
+	while (1) {
+		for (int j = 0; j < 500; ++j) {
+			term = 1.0/(2.0*i+1.0);
+			if (i & 1) term = -term;
+			pi += term;
+			++i;
+		}
+		yield();
+	}
 }
 
-void myThread2()
+void done()
 {
-	puts("yo");
-	yield();
-	puts("not done yet!");
-	return;
+	puts("Yay!");
+	puts("(hope that helped)");
+	printf("btw the value of pi is ~%.24Lf\n", 4*pi);
+	exit(0);
 }
 
-void myThread3()
+/*
+ * In a nicer implementation, init would mess with the dynamically linked
+ * library and replace standard functions with ones made to only block the,
+ * calling thread, like this (but like the actual function and in bulk).
+ * 
+ * Perhaps it could only have one select-manager thing and have threads
+ * mark themselves as waiting on an fd, so on a signal for an fd becomming
+ * available it could simply unmark the thread
+ *
+ * that'd be cool I think
+*/
+char *readLine(char* buf, size_t n)
 {
-	puts("ARGHGHHHHHHHH");
-	return;
+	int res;
+	fd_set rfds;
+	struct timeval now;
+	do {
+		FD_ZERO(&rfds);
+		FD_SET(0, &rfds);
+
+		now.tv_sec = 0;
+		now.tv_usec = 0;
+
+		yield();
+	} while ((res = select(1, &rfds, NULL, NULL, &now)) == 0);
+
+	return fgets(buf, n, stdin);
 }

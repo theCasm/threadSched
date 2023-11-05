@@ -2,7 +2,7 @@ extern	TTABLE
 extern	currID
 extern	scheduleNext
 
-%define TSIZ	32
+%define TSIZ	40
 %define xarea  	16
 %define SP	  	24
 
@@ -52,8 +52,11 @@ extern	scheduleNext
 %endmacro
 
 	global yield
+	global awaken
+	global threadInit
 
 yield:	pushadq
+	pushfq
 
 	imul 	rcx, [rel currID], TSIZ	; rcx = sizeof(struct Thread)*currID
 
@@ -87,6 +90,43 @@ awaken:	imul	rcx, [rel currID], TSIZ
 	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[currID]->xarea
 	XRSTOR	[rcx]
 	
+	popfq
 	popadq
 	ret
 	
+
+;; necessary to "fake" call to yield so everything works
+;; ASSUMES fake stack trace already done
+;;  - pushes regs/flags
+;;  - xsave
+;;  - stores new rsp
+;; input: 	rdi should hold pointer to thread struct
+;;	rsi should hold SP
+threadInit:	
+	push	rax
+	push	rdx
+	push	rcx
+	push	r10
+
+	mov	r10, rsp
+	mov	rsp, rsi
+	; we are now "in" target thread's stack
+
+	pushadq
+	pushfq
+
+	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with
+	mov	rdx, 0xFFFFFFFFFFFFFFFF	; all features enabled
+	mov	rcx, [rdi + xarea]	; rcx = &TTABLE[currID]->xarea
+	XSAVE	[rcx]
+
+	mov	[rdi + SP], rsp
+	
+	; remember to go back
+	mov	rsp, r10
+
+	pop	r10
+	pop 	rcx
+	pop 	rdx
+	pop 	rax
+	ret

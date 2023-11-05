@@ -20,6 +20,7 @@ struct thread {
 	enum state state;
 	void *xarea;
 	void *SP;
+	void *stack;
 };
 
 
@@ -27,7 +28,9 @@ extern struct thread TTABLE[];
 extern size_t currID;
 
 extern void yield(void);
+extern void threadInit(struct thread*, void*);
 extern void init(void);
+extern void cleanup(void);
 extern size_t createThread(void (*)(void));
 extern void die(void);
 
