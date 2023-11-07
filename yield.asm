@@ -55,8 +55,9 @@ extern	scheduleNext
 	global awaken
 	global threadInit
 
-yield:	pushadq
+yield:	
 	pushfq
+	pushadq
 
 	imul 	rcx, [rel currID], TSIZ	; rcx = sizeof(struct Thread)*currID
 
@@ -90,8 +91,8 @@ awaken:	imul	rcx, [rel currID], TSIZ
 	mov	rcx, [rbx + xarea]	; rcx = &TTABLE[currID]->xarea
 	XRSTOR	[rcx]
 	
-	popfq
 	popadq
+	popfq
 	ret
 	
 
