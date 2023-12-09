@@ -6,7 +6,7 @@ SRC_DIR := src
 CC := clang
 ASM := nasm
 
-CFLAGS := -Wall -fPIC
+CFLAGS := -Weverything -fPIC
 ASMFLAGS := -felf64
 LDFLAGS := -shared
 

@@ -2,8 +2,8 @@
  * This file contains the definitions needed to make and store a thread
 */
 
-#ifndef SCHED_THREAD
-#define SCHED_THREAD
+#ifndef USER_TSCHED_THREAD_H_
+#define USER_TSCHED_THREAD_H_
 
 #define NUM 32
 #define XAREA_SIZE 2440

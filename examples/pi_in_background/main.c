@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
 #include "../../src/thread.h"
+#include "../../src/io.h"
 
 char *readLine(char*, size_t);
 void somethingElse(void);
@@ -24,15 +24,15 @@ int main()
 	char buf[256] = "n";
 	fputs("can I help you? ", stdout);
 	fflush(stdout);
-	readLine(buf, 256);
-	if (buf[0] == 'y') {
+	nonblock_fgets(buf, 256, stdin);
+	if ((buf[0] | 0b100000) == 'y') {
 		done();
 	}
 
 	fputs("are you sure? ", stdout);
 	fflush(stdout);
-	readLine(buf, 256);
-	if (buf[0] == 'n') {
+	nonblock_fgets(buf, 256, stdin);
+	if ((buf[0] | 0b100000) == 'n') {
 		done();
 	}
 
@@ -66,33 +66,4 @@ void done()
 	printf("btw the value of pi (calculated in the background)" 
 		"is ~%.24Lf\n", 4*pi);
 	exit(0);
-}
-
-/*
- * In a nicer implementation, init would mess with the dynamically linked
- * library and replace standard functions with ones made to only block the,
- * calling thread, like this (but like the actual function and in bulk).
- * 
- * Perhaps it could only have one select-manager thing and have threads
- * mark themselves as waiting on an fd, so on a signal for an fd becomming
- * available it could simply unmark the thread
- *
- * that'd be cool I think
-*/
-char *readLine(char* buf, size_t n)
-{
-	int res;
-	fd_set rfds;
-	struct timeval now;
-	do {
-		FD_ZERO(&rfds);
-		FD_SET(0, &rfds);
-
-		now.tv_sec = 0;
-		now.tv_usec = 0;
-
-		yield();
-	} while ((res = select(1, &rfds, NULL, NULL, &now)) == 0);
-
-	return fgets(buf, n, stdin);
 }

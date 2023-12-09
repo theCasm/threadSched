@@ -65,7 +65,7 @@ yield:
 	imul 	rcx, [rbx], TSIZ	; rcx = sizeof(struct Thread)*currID
 
 	mov	rbx, [rel TTABLE wrt ..gotpc]
-	add	rbx, rcx		; r8 = &TTABLE[currID]
+	add	rbx, rcx
 
 	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with
 	mov	rdx, 0xFFFFFFFFFFFFFFFF	; all features enabled
@@ -119,8 +119,8 @@ threadInit:
 	mov	rsp, rsi
 	; we are now "in" target thread's stack
 
-	pushadq
 	pushfq
+	pushadq
 
 	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with
 	mov	rdx, 0xFFFFFFFFFFFFFFFF	; all features enabled
