@@ -4,7 +4,6 @@ Simple userspace nonpreemptive thread schedular. So simple I feel bad calling it
 I was supposed to be writing an essay instead of this but yk life happens. I personally think my approach is very cool.  
 
 ## To build:
-enter the src directory  
 run `make` to run the Makefile using default settings  
 the generated libthreads.so file will be in the build directory  
 

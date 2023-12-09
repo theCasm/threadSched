@@ -1,7 +1,7 @@
 TARGET := libthreads.so
 
 BUILD_DIR := ./build
-SRC_DIR := ./
+SRC_DIR := src
 
 CC := clang
 ASM := nasm

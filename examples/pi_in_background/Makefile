@@ -2,7 +2,7 @@ CC := clang
 CFLAGS := -Wall
 
 LIBS := -lthreads
-LIBDIRS := -L./../../src/build
+LIBDIRS := -L./../../build
 
 main: main.o
 	$(CC) $(LIBDIRS) $(LIBS) $(CFLAGS) -o main main.o
