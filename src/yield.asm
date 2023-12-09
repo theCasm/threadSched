@@ -1,3 +1,5 @@
+	default	rel
+
 extern	TTABLE
 extern	currID
 extern	scheduleNext
@@ -59,10 +61,11 @@ yield:
 	pushfq
 	pushadq
 
-	imul 	rcx, [rel currID], TSIZ	; rcx = sizeof(struct Thread)*currID
+	mov	rbx, [rel currID wrt ..gotpc]
+	imul 	rcx, [rbx], TSIZ	; rcx = sizeof(struct Thread)*currID
 
-	lea	rbx, [rel TTABLE]	;
-	add	rbx, rcx		; rbx = &TTABLE[currID]
+	mov	rbx, [rel TTABLE wrt ..gotpc]
+	add	rbx, rcx		; r8 = &TTABLE[currID]
 
 	mov	rax, 0xFFFFFFFFFFFFFFFF	; we want to call xsave with
 	mov	rdx, 0xFFFFFFFFFFFFFFFF	; all features enabled
@@ -74,14 +77,16 @@ yield:
 	;; we just have to change currID to switch processes - but only
 	;; if the new process is waiting on a yield. We don't need 
 	;; to write everyting in asm anymore
-	call	scheduleNext
+	mov	rax, [rel scheduleNext wrt ..gotpc]
+	call	rax
 
 	;; if all has gone well, scheduleNext has simply moved stuff around
 	;; so currID now gives the new thread.
 
-awaken:	imul	rcx, [rel currID], TSIZ
+awaken:	mov	rbx, [rel currID wrt ..gotpc]
+	imul	rcx, [rbx], TSIZ
 
-	lea	rbx, [rel TTABLE]
+	mov	rbx, [rel TTABLE wrt ..gotpc]
 	add	rbx, rcx
 
 	mov	rsp, [rbx + SP]
@@ -105,6 +110,7 @@ awaken:	imul	rcx, [rel currID], TSIZ
 ;;	rsi should hold SP
 threadInit:	
 	push	rax
+	push	rbx
 	push	rdx
 	push	rcx
 	push	r10
@@ -129,5 +135,6 @@ threadInit:
 	pop	r10
 	pop 	rcx
 	pop 	rdx
+	pop	rbx
 	pop 	rax
 	ret

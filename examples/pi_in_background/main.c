@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/select.h>
-#include "thread.h"
+#include "../../src/thread.h"
 
 char *readLine(char*, size_t);
 void somethingElse(void);
@@ -63,8 +63,8 @@ void somethingElse()
 void done()
 {
 	puts("Yay!");
-	puts("(hope that helped)");
-	printf("btw the value of pi is ~%.24Lf\n", 4*pi);
+	printf("btw the value of pi (calculated in the background)" 
+		"is ~%.24Lf\n", 4*pi);
 	exit(0);
 }
 

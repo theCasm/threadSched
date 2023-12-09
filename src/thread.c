@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <dlfcn.h>
 #include "thread.h"
 
 extern void yield(void);
