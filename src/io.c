@@ -1,4 +1,9 @@
 /*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * This file contains replacements for blocking IO funcitons.
  * In practice, this will likely just be equivilant to writing a much
  * worse version of glibc. If there was a way to see the number of chars
  * available for reading, we could just call glibc with that num and

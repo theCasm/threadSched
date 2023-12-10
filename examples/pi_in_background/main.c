@@ -1,5 +1,7 @@
-/*
- * Test main program
+/* Any copyright is dedicated to the Public Domain.
+ * https://creativecommons.org/publicdomain/zero/1.0/
+ *
+ * Example program using seperate threads for IO and compute.
 */
 
 #include <string.h>
