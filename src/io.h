@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+ssize_t nonblock_read(int, void*, size_t);
 int nonblock_fgetc(FILE*);
 char *nonblock_fgets(char*, int, FILE*);
 
